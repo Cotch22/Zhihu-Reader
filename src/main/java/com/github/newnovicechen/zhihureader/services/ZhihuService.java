@@ -51,8 +51,29 @@ public final class ZhihuService {
         JsonObject jsonObject = SendHttpUtil.sendHttpGet(url, headMap);
         JsonArray datas = jsonObject.getAsJsonArray("data");
         for (JsonElement data : datas) {
-            String title = data.getAsJsonObject().getAsJsonObject("target").getAsJsonObject().getAsJsonObject("question").get("title").getAsString();
-            String id = data.getAsJsonObject().getAsJsonObject("target").getAsJsonObject().getAsJsonObject("question").get("id").getAsString();
+            if (!data.isJsonObject()) {
+                continue;
+            }
+
+            JsonObject item = data.getAsJsonObject();
+            JsonObject target = item.getAsJsonObject("target");
+            if (target == null) {
+                continue;
+            }
+
+            JsonObject question = target.getAsJsonObject("question");
+            if (question == null) {
+                continue;
+            }
+
+            JsonElement titleElement = question.get("title");
+            JsonElement idElement = question.get("id");
+            if (titleElement == null || idElement == null) {
+                continue;
+            }
+
+            String title = titleElement.getAsString();
+            String id = idElement.getAsString();
             questionList.add(new Question(id, title));
         }
         return questionList;
