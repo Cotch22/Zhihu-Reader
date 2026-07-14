@@ -205,19 +205,27 @@ public class SendHttpUtil {
     }
 
     public static <T> T checkResponse(Response response, Class<T> clazz) throws HttpException {
-        if (!response.isSuccessful()) {
-            throw new HttpException("远程调用失败");
-        }
         String s;
         try {
-            s = response.body().string();
+            ResponseBody responseBody = response.body();
+            s = responseBody != null ? responseBody.string() : "";
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+
+        if (!response.isSuccessful()) {
+            String errorBody = s.length() > 500 ? s.substring(0, 500) + "..." : s;
+            throw new HttpException("远程调用失败，HTTP " + response.code() + " " + response.message()
+                    + (errorBody.isEmpty() ? "" : "，响应内容：" + errorBody));
+        }
+
         JsonObject jsonObject = JsonParser.parseString(s).getAsJsonObject();
         if (jsonObject.has("code")) {
             if (jsonObject.get("code").getAsInt() != 200) {
-                throw new HttpException(jsonObject.get("errorStackTrace").getAsString());
+                String errorMessage = jsonObject.has("errorStackTrace") && !jsonObject.get("errorStackTrace").isJsonNull()
+                        ? jsonObject.get("errorStackTrace").getAsString()
+                        : s;
+                throw new HttpException(errorMessage);
             }
         }
         return new Gson().fromJson(s, clazz);
