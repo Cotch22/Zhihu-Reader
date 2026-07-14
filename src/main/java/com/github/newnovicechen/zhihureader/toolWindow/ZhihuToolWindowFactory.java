@@ -154,6 +154,7 @@ public class ZhihuToolWindowFactory implements ToolWindowFactory {
         private final JLabel pageLabel = new JLabel("页: 1");
 
         private JButton refreshBtn; // 将refreshBtn改为成员变量
+        private JButton retryBtn;
         private JButton prevBtn;
         private JButton nextBtn;
         private JButton toggleModeBtn; // 切换模式按钮
@@ -244,6 +245,9 @@ public class ZhihuToolWindowFactory implements ToolWindowFactory {
             toggleModeBtn.addActionListener(e -> toggleDisplayMode());
             updateToggleModeButtonText(); // 初始化按钮文本
 
+            retryBtn = new JButton("重试");
+            retryBtn.addActionListener(e -> retryCurrentLoad());
+
             // 设置Cookie按钮
             setCookieBtn = new JButton("设置Cookie");
             setCookieBtn.addActionListener(e -> showCookieInputDialog());
@@ -255,6 +259,7 @@ public class ZhihuToolWindowFactory implements ToolWindowFactory {
             top.add(prevBtn);
             top.add(nextBtn);
             top.add(pageLabel);
+            top.add(retryBtn);
             top.add(toggleModeBtn); // 添加切换按钮
 
             root.add(top, BorderLayout.NORTH);
@@ -329,6 +334,21 @@ public class ZhihuToolWindowFactory implements ToolWindowFactory {
             }
         }
 
+        private void retryCurrentLoad() {
+            if (!zhihuService.isCookieSetAndValid()) {
+                showCookieRequiredMessage();
+                updateFunctionalityButtonsState();
+                return;
+            }
+
+            Question selectedQuestion = menuList.getSelectedValue();
+            if (selectedQuestion != null) {
+                loadSelectedQuestionAnswers();
+            } else {
+                loadRecommend();
+            }
+        }
+
         // 显示需要Cookie的提示信息
         private void showCookieRequiredMessage() {
             String msg = "请先点击“设置Cookie”按钮，输入Cookie才能使用插件。";
@@ -337,10 +357,11 @@ public class ZhihuToolWindowFactory implements ToolWindowFactory {
             listModel.clear(); // 清空列表
         }
 
-        // 统一更新功能按钮的启用状态
+        // 统一���新功能按钮的启用状态
         private void updateFunctionalityButtonsState() {
             boolean enabled = zhihuService.isCookieSetAndValid();
             refreshBtn.setEnabled(enabled);
+            retryBtn.setEnabled(enabled);
             // 只有在有内容且Cookie有效时才启用分页按钮
             prevBtn.setEnabled(enabled && offsetCurrent > 0);
             nextBtn.setEnabled(enabled && !listModel.isEmpty()); // 假设如果listModel不空，就有可能有多页
